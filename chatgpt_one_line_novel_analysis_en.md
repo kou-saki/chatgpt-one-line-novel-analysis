@@ -38,11 +38,27 @@ This section outlines the likely internal logic by which inference-based AI mode
   - It is hypothesised that English, being the foundational language for most models, is the most token-efficient language.
     - Note: Even if prompts are in another language, internal translation processes may still consume additional tokens. This hypothesis merits further empirical investigation.
 
-### 3. Safe Termination and Structural Completion
+### 3. Convergence Towards Safe Termination
 
-- The model avoids mid-sentence termination where possible, aiming instead to deliver complete-seeming sections or chapters.
-- At logical breakpoints, the model inserts `<|endoftext|>` to safely conclude output.
-- To avoid abrupt terminations or perceived incompleteness, the model may prepend summarising phrases such as “(…)” or use structured closure strategies.
+- The model exhibits a preference for completing a chapter rather than truncating a sentence mid-way.
+- At natural breakpoints in the narrative, the model generates a special token—<|endoftext|>—which signals the end of output.
+- Prior to this token being emitted, the model attempts to select phrasing that serves as a plausible sentence-ending expression, based on patterns frequently encountered in its training data.
+
+### 4. Evaluation Logic During Training
+- The model has been optimised to favour “cleanly concluded outputs” over “extended responses.”
+- Rather than fully completing a prompt as specified, it is more strongly rewarded for returning a prompt-consistent but swift response, thereby enabling the continuation of dialogue.
+
+### 5. In Practice, the Behaviour Proceeds as Follows
+- In attempting to fulfil the prompt to “write a 1000-page novel,” the model internally begins constructing a comprehensive framework—considering characters, plotlines, foreshadowing, chapter structure, and narrative continuity.
+- The processing required for this structural planning consumes a substantial portion of the available token pool (provisionally named), thereby reducing the number of tokens left for visible user-facing output.
+- In order to avoid generating text that appears abruptly truncated, and to ensure the output ends in a plausible, coherent manner, the model inserts a closing phrase—frequently something like “(…)” or “to be continued”—prior to generating the <|endoftext|> token.
+  - The reward signals encoded during training favour certain behaviours:
+  - Outputs that continue the dialogue are reinforced.
+  - Responses explicitly stating “I cannot do this” are discouraged.
+  - Clear completions such as “done” or “finished” are positively reinforced.
+
+As a result, these four elements interact cumulatively:
+The model expends most of its token capacity on invisible pre-compositional planning, leaving only a narrow margin for visible output. Within that remaining space, it attempts to generate a recognisable closing phrase and then emits <|endoftext|>, producing the observed behaviour of a “one-line novel.”
 
 ---
 
